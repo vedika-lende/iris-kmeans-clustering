@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iris AI | K-Means Clustering</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--bg:#0b1120;--sidebar:#111a2e;--card:#151f33;--text:#e8eefc;--muted:#9baac4;--accent:#38bdf8;--border:#28364f;--input:#0d1729;--danger:#fca5a5}
+body.light{--bg:#f2f6fc;--sidebar:#fff;--card:#fff;--text:#172033;--muted:#64748b;--accent:#0284c7;--border:#dce4ef;--input:#f8fafc;--danger:#b91c1c}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text);transition:background .25s,color .25s}
+a{color:inherit;text-decoration:none}button,input{font:inherit}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:245px;background:var(--sidebar);border-right:1px solid var(--border);padding:28px 18px;position:fixed;top:0;bottom:0;left:0;z-index:10}
+.brand{font-size:22px;font-weight:800;margin:4px 10px 8px}.brand span,.accent{color:var(--accent)}
+.subtitle{font-size:12px;color:var(--muted);margin:0 10px 35px}
+.nav-link{display:block;padding:13px 14px;border-radius:10px;margin-bottom:8px;color:var(--muted);transition:.2s}
+.nav-link:hover,.nav-link.active{color:var(--accent);background:rgba(56,189,248,.10)}
+.sidebar-note{position:absolute;bottom:25px;left:25px;right:25px;color:var(--muted);font-size:12px;line-height:1.7}
+main{margin-left:245px;width:calc(100% - 245px);padding:32px;max-width:1600px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:32px}
+.topbar h1{font-size:clamp(24px,3vw,32px);margin-bottom:7px}
+.muted{color:var(--muted);line-height:1.6}
+.theme-button,.btn{border:1px solid var(--border);border-radius:10px;padding:11px 16px;background:var(--card);color:var(--text);cursor:pointer;transition:.2s}
+.btn.primary{background:var(--accent);color:#06111f;border-color:var(--accent);font-weight:700}
+.btn:hover,.theme-button:hover{transform:translateY(-2px)}
+section{margin-bottom:42px;scroll-margin-top:25px}
+.section-heading{margin-bottom:20px}.section-heading h2{font-size:23px;margin-bottom:7px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:23px;min-width:0}
+.stat-label{color:var(--muted);font-size:14px}.stat-value{font-size:30px;font-weight:800;margin:12px 0 8px}
+.hero{background:linear-gradient(125deg,rgba(14,165,233,.16),rgba(99,102,241,.08));border:1px solid var(--border);border-radius:18px;padding:30px;margin-bottom:22px}
+.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.25;margin:14px 0}
+.hero p{max-width:720px;color:var(--muted);line-height:1.8;margin-bottom:22px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:24px 0}
+label{display:block;font-size:14px;margin-bottom:9px;font-weight:600}
+input{width:100%;padding:13px;border:1px solid var(--border);border-radius:9px;background:var(--input);color:var(--text);outline:none}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.result{margin-top:22px;padding:20px;border:1px solid var(--accent);border-radius:12px;background:rgba(56,189,248,.08)}
+.result h3{color:var(--accent);font-size:23px;margin-bottom:8px}
+.cluster-number{font-size:34px;font-weight:800;margin:10px 0}
+.alert{padding:14px;border-radius:10px;margin-top:18px;color:var(--danger);background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.35)}
+.chart-card{min-height:330px}.chart-wrap{position:relative;height:245px;margin-top:20px}
+.feature-list{padding-left:20px;line-height:2;color:var(--muted)}
+.pill{display:inline-block;padding:6px 10px;border-radius:20px;background:rgba(56,189,248,.12);color:var(--accent);font-size:12px;font-weight:700}
+footer{border-top:1px solid var(--border);padding:22px 0 5px;color:var(--muted);font-size:13px;text-align:center}
+@media(max-width:950px){.sidebar{width:190px}main{margin-left:190px;width:calc(100% - 190px);padding:22px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.layout{display:block}.sidebar{position:relative;width:100%;padding:16px;border-right:0;border-bottom:1px solid var(--border)}.brand{margin-bottom:4px}.subtitle,.sidebar-note{display:none}.nav-links{display:flex;gap:5px;overflow-x:auto;margin-top:15px}.nav-link{white-space:nowrap;padding:10px;font-size:13px}main{margin:0;width:100%;padding:20px 15px}.grid,.form-grid{grid-template-columns:1fr}.topbar{align-items:flex-start}.hero{padding:22px}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="brand">Iris<span>AI</span></div>
+  <p class="subtitle">MACHINE LEARNING DASHBOARD</p>
+  <nav class="nav-links">
+    <a class="nav-link" data-page="dashboard" href="#dashboard">⌂ Dashboard</a>
+    <a class="nav-link" data-page="prediction" href="#prediction">✦ Prediction</a>
+    <a class="nav-link" data-page="analytics" href="#analytics">▥ Analytics</a>
+    <a class="nav-link" data-page="about" href="#about">ⓘ About Project</a>
+  </nav>
+  <div class="sidebar-note"><strong>Model</strong><br>K-Means Clustering<br><span class="accent">Unsupervised Learning</span></div>
+</aside>
+
+<main>
+<header class="topbar">
+  <div><h1 id="pageTitle">Iris Clustering Dashboard</h1><p class="muted" id="pageSubtitle">Explore flower measurements and predict their clusters.</p></div>
+  <button class="theme-button" id="themeToggle" type="button">☀ / ☾</button>
+</header>
+
+<section id="dashboard" class="page-section">
+  <div class="hero"><span class="pill">MACHINE LEARNING PROJECT</span><h2>Discover patterns in <span class="accent">Iris flowers.</span></h2><p>Use a trained K-Means model to group Iris flowers using sepal and petal measurements. Enter measurements to obtain a cluster assignment from your saved model.</p><a class="btn primary" href="#prediction" data-page="prediction">Start Prediction →</a></div>
+  <div class="grid">
+    <div class="card"><p class="stat-label">Input Features</p><div class="stat-value">04</div><p class="muted">Sepal and petal measurements</p></div>
+    <div class="card"><p class="stat-label">Configured Clusters</p><div class="stat-value">03</div><p class="muted">K-Means model configuration</p></div>
+    <div class="card"><p class="stat-label">Algorithm</p><div class="stat-value" style="font-size:25px">K-Means</div><p class="muted">Unsupervised clustering</p></div>
+  </div>
+</section>
+
+<section id="prediction" class="page-section">
+  <div class="section-heading"><h2>Flower Cluster Prediction</h2><p class="muted">Enter all four measurements in centimeters.</p></div>
+  <div class="card">
+    {% if not model_ready %}
+    <div class="alert" role="alert"><strong>Model files not loaded.</strong><br>Make sure <code>iris_kmeans_model.pkl</code> and <code>iris_scaler.pkl</code> are in the same folder as app.py.</div>
+    {% endif %}
+    <form action="{{ url_for('prediction') }}" method="POST" id="predictionForm">
+      <div class="form-grid">
+        <div><label for="sepal_length">Sepal Length (cm)</label><input id="sepal_length" name="sepal_length" type="number" min="0.1" max="20" step="any" value="{{ values[0] }}" required></div>
+        <div><label for="sepal_width">Sepal Width (cm)</label><input id="sepal_width" name="sepal_width" type="number" min="0.1" max="20" step="any" value="{{ values[1] }}" required></div>
+        <div><label for="petal_length">Petal Length (cm)</label><input id="petal_length" name="petal_length" type="number" min="0.1" max="20" step="any" value="{{ values[2] }}" required></div>
+        <div><label for="petal_width">Petal Width (cm)</label><input id="petal_width" name="petal_width" type="number" min="0.1" max="20" step="any" value="{{ values[3] }}" required></div>
+      </div>
+      <div class="actions"><button class="btn primary" type="submit">Predict Cluster</button><button class="btn" type="reset">Reset Form</button></div>
+    </form>
+
+    {% if error %}
+    <div class="alert" id="predictionError" role="alert"><strong>Prediction Error</strong><p>{{ error }}</p></div>
+    {% endif %}
+
+    {% if cluster is not none %}
+    <div class="result" id="predictionResult" role="status">
+      <h3>Prediction Complete</h3><p>The flower belongs to <strong>Cluster {{ cluster }}</strong>.</p>
+      <p class="muted" style="margin-top:8px">This is a K-Means cluster label, not a guaranteed Iris species identification or confidence score.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section id="analytics" class="page-section">
+  <div class="section-heading"><h2>Analytics Overview</h2><p class="muted">Visualize example flower measurements and the configured cluster count.</p></div>
+  <div class="grid">
+    <div class="card chart-card"><h3>Flower Measurements</h3><p class="muted">Illustrative example values in centimeters</p><div class="chart-wrap"><canvas id="measureChart"></canvas></div></div>
+    <div class="card chart-card"><h3>Model Configuration</h3><p class="muted">This chart represents the three configured cluster labels, not actual sample counts.</p><div class="chart-wrap"><canvas id="clusterChart"></canvas></div></div>
+  </div>
+</section>
+
+<section id="about" class="page-section">
+  <div class="section-heading"><h2>About This Project</h2><p class="muted">An interactive machine learning demonstration.</p></div>
+  <div class="grid">
+    <div class="card"><span class="pill">ALGORITHM</span><h3 style="margin-top:12px">K-Means Clustering</h3><p class="muted" style="margin-top:12px">K-Means groups observations according to distances between feature values and cluster centers.</p></div>
+    <div class="card"><span class="pill">FEATURES</span><h3 style="margin-top:12px">Four Measurements</h3><ul class="feature-list"><li>Sepal length</li><li>Sepal width</li><li>Petal length</li><li>Petal width</li></ul></div>
+    <div class="card"><span class="pill">TECHNOLOGY</span><h3 style="margin-top:12px">Project Stack</h3><ul class="feature-list"><li>Python and Flask</li><li>NumPy and scikit-learn</li><li>HTML, CSS and JavaScript</li><li>Chart.js</li></ul></div>
+  </div>
+</section>
+<footer>IrisAI · K-Means Clustering Project · Built with Python and Flask</footer>
+</main>
+</div>
+
+<script>
+const initialPage = {{ page | tojson }};
+const titles = {
+  dashboard: ["Iris Clustering Dashboard", "Explore flower measurements and predict their clusters."],
+  prediction: ["Flower Cluster Prediction", "Enter measurements and view the cluster assignment."],
+  analytics: ["Analytics Overview", "Explore example measurements and model configuration."],
+  about: ["About IrisAI", "Learn how this clustering application works."]
+};
+
+function showPage(page, updateHash = true) {
+  if (!document.getElementById(page)) page = "dashboard";
+  document.querySelectorAll(".page-section").forEach(section => section.style.display = "none");
+  document.getElementById(page).style.display = "block";
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.classList.toggle("active", link.dataset.page === page);
+  });
+  document.getElementById("pageTitle").textContent = titles[page][0];
+  document.getElementById("pageSubtitle").textContent = titles[page][1];
+  if (updateHash && location.hash !== "#" + page) {
+    history.replaceState(null, "", "#" + page);
+  }
+}
+
+document.querySelectorAll("[data-page]").forEach(link => {
+  link.addEventListener("click", event => {
+    event.preventDefault();
+    showPage(link.dataset.page);
+    window.scrollTo({top: 0, behavior: "smooth"});
+  });
+});
+
+// Important: after a Flask form POST, page='prediction', so show the prediction section.
+const validPages = ["dashboard", "prediction", "analytics", "about"];
+const hashPage = location.hash.replace("#", "");
+const startPage = validPages.includes(hashPage) ? hashPage : initialPage;
+showPage(startPage, false);
+
+// Restore and toggle the theme safely.
+const themeToggle = document.getElementById("themeToggle");
+try {
+  if (localStorage.getItem("irisTheme") === "light") document.body.classList.add("light");
+} catch (e) {}
+themeToggle.addEventListener("click", function () {
+  document.body.classList.toggle("light");
+  try {
+    localStorage.setItem("irisTheme", document.body.classList.contains("light") ? "light" : "dark");
+  } catch (e) {}
+  updateChartTheme();
+});
+
+function chartColors() {
+  return {
+    text: getComputedStyle(document.body).getPropertyValue("--text").trim(),
+    muted: getComputedStyle(document.body).getPropertyValue("--muted").trim(),
+    border: getComputedStyle(document.body).getPropertyValue("--border").trim()
+  };
+}
+
+let measureChart = null;
+let clusterChart = null;
+if (window.Chart) {
+  const colors = chartColors();
+  const measureCanvas = document.getElementById("measureChart");
+  if (measureCanvas) {
+    measureChart = new Chart(measureCanvas, {
+      type: "bar",
+      data: {
+        labels: ["Sepal Length", "Sepal Width", "Petal Length", "Petal Width"],
+        datasets: [{
+          label: "Example measurement (cm)",
+          data: [5.1, 3.5, 1.4, 0.2],
+          backgroundColor: ["#38bdf8", "#818cf8", "#34d399", "#fbbf24"],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {legend: {labels: {color: colors.text}}},
+        scales: {
+          x: {ticks: {color: colors.muted}, grid: {color: colors.border}},
+          y: {beginAtZero: true, ticks: {color: colors.muted}, grid: {color: colors.border}}
+        }
+      }
+    });
+  }
+  const clusterCanvas = document.getElementById("clusterChart");
+  if (clusterCanvas) {
+    clusterChart = new Chart(clusterCanvas, {
+      type: "doughnut",
+      data: {
+        labels: ["Cluster 0", "Cluster 1", "Cluster 2"],
+        datasets: [{data: [1, 1, 1], backgroundColor: ["#38bdf8", "#818cf8", "#34d399"], borderWidth: 0}]
+      },
+      options: {
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {legend: {position: "bottom", labels: {color: colors.text}}}
+      }
+    });
+  }
+}
+function updateChartTheme() {
+  if (!window.Chart) return;
+  const colors = chartColors();
+  [measureChart, clusterChart].forEach(chart => {
+    if (!chart) return;
+    if (chart.options.scales) {
+      Object.values(chart.options.scales).forEach(scale => {
+        if (scale.ticks) scale.ticks.color = colors.muted;
+        if (scale.grid) scale.grid.color = colors.border;
+      });
+    }
+    if (chart.options.plugins.legend) chart.options.plugins.legend.labels.color = colors.text;
+    chart.update();
+  });
+}
+
+// After prediction/error response, automatically bring the relevant section into view.
+window.addEventListener("load", function () {
+  const result = document.getElementById("predictionResult");
+  const error = document.getElementById("predictionError");
+  if (result || error) {
+    document.getElementById("prediction").scrollIntoView({behavior: "smooth", block: "start"});
+    setTimeout(() => (result || error).scrollIntoView({behavior: "smooth", block: "center"}), 250);
+  }
+});
+</script>
+</body>
+</html>
